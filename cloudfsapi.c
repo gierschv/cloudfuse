@@ -470,12 +470,14 @@ static struct {
        tenant[MAX_HEADER_SIZE], authurl[MAX_URL_SIZE], use_snet;
 } reconnect_args;
 
-void cloudfs_set_credentials(char *username, char *tenant, char *password, char *authurl, int use_snet)
+void cloudfs_set_credentials(char *username, char *tenant, char *password, char *authurl, int use_snet, char* s_storage_url, char* s_storage_token)
 {
   strncpy(reconnect_args.username, username, sizeof(reconnect_args.username));
   strncpy(reconnect_args.tenant, tenant, sizeof(reconnect_args.tenant));
   strncpy(reconnect_args.password, password, sizeof(reconnect_args.password));
   strncpy(reconnect_args.authurl, authurl, sizeof(reconnect_args.authurl));
+  strncpy(storage_url, s_storage_url, sizeof(storage_url));
+  strncpy(storage_token, s_storage_token, sizeof(storage_token));
   reconnect_args.use_snet = use_snet;
 }
 
@@ -487,6 +489,10 @@ int cloudfs_connect()
   xmlParserCtxtPtr xmlctx = NULL;
 
   char *postdata;
+
+  if (storage_url[0] && storage_token[0])
+    return (1);
+
   if (reconnect_args.tenant[0])
   {
       int count = asprintf(&postdata,

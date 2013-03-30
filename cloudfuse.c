@@ -432,6 +432,8 @@ static struct options {
     char authurl[OPTION_SIZE];
     char use_snet[OPTION_SIZE];
     char verify_ssl[OPTION_SIZE];
+    char storage_url[OPTION_SIZE];
+    char storage_token[OPTION_SIZE];
 } options = {
     .username = "",
     .api_key = "",
@@ -440,6 +442,8 @@ static struct options {
     .authurl = "https://auth.api.rackspacecloud.com/v1.0",
     .use_snet = "false",
     .verify_ssl = "true",
+    .storage_url = "",
+    .storage_token = "",
 };
 
 int parse_option(void *data, const char *arg, int key, struct fuse_args *outargs)
@@ -451,7 +455,9 @@ int parse_option(void *data, const char *arg, int key, struct fuse_args *outargs
       sscanf(arg, " cache_timeout = %[^\r\n ]", options.cache_timeout) ||
       sscanf(arg, " authurl = %[^\r\n ]", options.authurl) ||
       sscanf(arg, " use_snet = %[^\r\n ]", options.use_snet) ||
-      sscanf(arg, " verify_ssl = %[^\r\n ]", options.verify_ssl))
+      sscanf(arg, " verify_ssl = %[^\r\n ]", options.verify_ssl) ||
+      sscanf(arg, " storage_url = %[^\r\n ]", options.storage_url) ||
+      sscanf(arg, " storage_token = %[^\r\n ]", options.storage_token))
     return 0;
   if (!strcmp(arg, "-f") || !strcmp(arg, "-d") || !strcmp(arg, "debug"))
     cloudfs_debug(1);
@@ -477,13 +483,17 @@ int main(int argc, char **argv)
 
   cache_timeout = atoi(options.cache_timeout);
 
-  if (!*options.username || !*options.api_key)
+  if ((!*options.username || !*options.api_key) &&
+      (!*options.storage_url || !*options.storage_token))
   {
     fprintf(stderr, "Unable to determine username and API key.\n\n");
     fprintf(stderr, "These can be set either as mount options or in"
                     "a file named %s\n\n", settings_filename);
     fprintf(stderr, "  username=[Account username]\n");
-    fprintf(stderr, "  api_key=[API key (or password for Keystone API)]\n\n");
+    fprintf(stderr, "  api_key=[API key (or password for Keystone API)]\n");
+    fprintf(stderr, "Or\n");
+    fprintf(stderr, "  storage_url=[Your storage URL]\n");
+    fprintf(stderr, "  storage_token=[Your storage token]\n\n");
     fprintf(stderr, "The following settings are optional:\n\n");
     fprintf(stderr, "  authurl=[Authentication url - connect to non-Rackspace Swift]\n");
     fprintf(stderr, "  tenant=[Tenant for authentication with Keystone, enables Auth 2.0 API]\n");
@@ -500,7 +510,7 @@ int main(int argc, char **argv)
   cloudfs_verify_ssl(!strcasecmp(options.verify_ssl, "true"));
 
   cloudfs_set_credentials(options.username, options.tenant, options.api_key,
-        options.authurl, !strcasecmp(options.use_snet, "true"));
+     options.authurl, !strcasecmp(options.use_snet, "true"), options.storage_url, options.storage_token);
   if (!cloudfs_connect())
   {
     fprintf(stderr, "Failed to authenticate.\n");
